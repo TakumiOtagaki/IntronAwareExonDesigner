@@ -3,6 +3,7 @@
 - Step 1 focuses on translating amino-acid sequences into codons with Biopython's NCBI table to keep the decision space purely synonymous.
 - ViennaRNA is imported lazily so that the module can still be inspected even if the bindings are unavailable; evaluation errors are surfaced with a clear runtime message.
 - Boundary pair scoring aggregates probabilities for the intron termini that the context reports, while caching avoids repeated ViennaRNA runs for identical sequences.
+- Base-pair indexes returned by ViennaRNA come either as 0-based arrays or 1-based tuple-like entries, so the evaluator now normalizes everything to 0-based positions before comparing against the boundary offsets to avoid missing edge probabilities.
 
 ## オブジェクト情報
 

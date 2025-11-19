@@ -117,7 +117,7 @@ GAのベスト解を初期値として局所最適化を行う。
     * アミノ酸配列とイントロンを与えて、ランダムなコドンでDNA配列を作り、ViennaRNAでスコアを返す関数だけ作る。
 
     * boundary score が現在 0.00 となっているのは極めておかしいです。入力は RNA になっていますか？また bpp は正しく呼び出され、下流に受け渡されていますか？
-    * energy についても前やった時より低く、誤っていそうです
+    * energy についても前やった時より低く、誤っていそうです[DONE]
         - ensemble free energy については、for each intron, sum up the EFE of x_{upstream, 60nt} + x_{intron} + x_{downstream, 30nt} を計算してほしい.
 2.  **Step 2: GAクラスの実装**
     * Evaluatorを組み込み、並列処理なしで動作確認。

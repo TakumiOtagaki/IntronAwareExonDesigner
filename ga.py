@@ -2,13 +2,31 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from random import Random
-from typing import Iterable, List, Protocol, Sequence, Tuple
+from typing import Iterable, List, Protocol, Sequence, Tuple, TYPE_CHECKING
 
 from tqdm import tqdm
 
 from evaluator import EvaluationResult, GenotypeDecoder
+
+
+if TYPE_CHECKING:
+    from evaluator import SequenceEvaluator
+
+_worker_evaluator: "SequenceEvaluator" | None = None
+
+
+def _initialize_worker(evaluator: "SequenceEvaluator") -> None:
+    global _worker_evaluator
+    _worker_evaluator = evaluator
+
+
+def _evaluate_genotype_in_worker(genotype: Sequence[int]) -> Tuple[List[int], EvaluationResult]:
+    if _worker_evaluator is None:
+        raise RuntimeError("Worker evaluator has not been initialized.")
+    return genotype, _worker_evaluator.evaluate(genotype)
 
 
 class EvaluatorProtocol(Protocol):
@@ -28,6 +46,7 @@ class GeneticAlgorithmConfig:
     generations: int = 20
     mutation_rate: float = 0.05
     tournament_size: int = 3
+    parallel_workers: int | None = None
 
 
 class GeneticAlgorithm:
@@ -58,6 +77,8 @@ class GeneticAlgorithm:
             raise ValueError("mutation_rate must be between 0 and 1")
         if self.config.tournament_size < 1:
             raise ValueError("tournament_size must be a positive integer")
+        if self.config.parallel_workers is not None and self.config.parallel_workers < 1:
+            raise ValueError("parallel_workers must be None or at least 1")
 
     def run(self, generations: int | None = None) -> EvaluationResult:
         """Execute the GA for `generations` iterations and return the best solution."""
@@ -89,7 +110,25 @@ class GeneticAlgorithm:
     def _evaluate_population(
         self, population: Iterable[List[int]]
     ) -> List[Tuple[List[int], EvaluationResult]]:
+        if self.config.parallel_workers and self.config.parallel_workers > 1:
+            return self._evaluate_population_parallel(population)
+        return self._evaluate_population_sequential(population)
+
+    def _evaluate_population_sequential(
+        self, population: Iterable[List[int]]
+    ) -> List[Tuple[List[int], EvaluationResult]]:
         return [(genotype, self.evaluator.evaluate(genotype)) for genotype in population]
+
+    def _evaluate_population_parallel(
+        self, population: Iterable[List[int]]
+    ) -> List[Tuple[List[int], EvaluationResult]]:
+        max_workers = self.config.parallel_workers or None
+        with ProcessPoolExecutor(
+            max_workers=max_workers,
+            initializer=_initialize_worker,
+            initargs=(self.evaluator,),
+        ) as executor:
+            return list(executor.map(_evaluate_genotype_in_worker, population))
 
     def _record_best(self, evaluated: Iterable[Tuple[List[int], EvaluationResult]]) -> None:
         for _, result in evaluated:

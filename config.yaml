@@ -7,13 +7,12 @@ temperature:
   initial: 1.0
   decay: 0.995
 ga:
-  population_size: 32
-  generations: 40
+  population_size: 8
+  generations: 30
   mutation_rate: 0.05
-  tournament_size: 3
+  tournament_size: 3 # 大きいほど早熟収束のリスク, 小さいと探索範囲は広まるが収束が遅くなる. デフォルトは3.
 output:
   sequence: dna
-  allow_rna: true
   directory: outputs
   prefix: intron_design
-parallel_workers: 7
+parallel_workers: 8

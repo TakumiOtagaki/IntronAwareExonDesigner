@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
 from pathlib import Path
 from random import Random
-from typing import Any, Callable, Iterable, List
+from typing import Any, Callable, Iterable, List, Sequence
+import RNA
 import yaml
 from matplotlib import pyplot as plt
 
@@ -29,36 +32,104 @@ def _sequence_snippet(sequence: str, width: int = 80) -> str:
     return f"{sequence[:segment]}…{sequence[-segment:]}"
 
 
-def _dna_to_rna(sequence: str) -> str:
-    return sequence.replace("T", "U").replace("t", "u")
+@dataclass(frozen=True)
+class _FullSequenceEntry:
+    label: str
+    result: EvaluationResult
+    dna_sequence: str
+    rna_sequence: str
 
 
 def _multifasta_header(label: str, energy: float, boundary_score: float) -> str:
     return f">{label} | efe={energy:.4f} | sum_bpp={boundary_score:.4f}"
 
 
-def _collect_main_entries(
-    best_result: EvaluationResult, final_population: Iterable[EvaluationResult]
-) -> List[tuple[str, EvaluationResult]]:
-    entries: List[tuple[str, EvaluationResult]] = [
-        ("main best", best_result),
-    ]
-    entries.extend((f"main final_population{idx}", result) for idx, result in enumerate(final_population))
-    return entries
-
-
-def _write_main_multifasta(
-    path: Path,
+def _collect_full_sequence_entries(
     context: IntronAwaredExonDesignerContext,
-    entries: Iterable[tuple[str, EvaluationResult]],
-    converter: Callable[[str], str],
+    best_result: EvaluationResult,
+    final_population: Iterable[EvaluationResult],
+) -> List[_FullSequenceEntry]:
+    entries: List[tuple[str, EvaluationResult]] = [
+        ("best", best_result),
+    ]
+    entries.extend((f"final_population{idx}", result) for idx, result in enumerate(final_population))
+    full_entries: List[_FullSequenceEntry] = []
+    for label, result in entries:
+        dna_seq = context.build_full_sequence(result.exon_sequence, uppercase=False)
+        rna_seq = context.build_full_sequence(
+            result.exon_sequence, uppercase=False, rna_output=True
+        )
+        full_entries.append(_FullSequenceEntry(label, result, dna_seq, rna_seq))
+    return full_entries
+
+
+def _write_full_multifasta(
+    path: Path,
+    entries: Iterable[_FullSequenceEntry],
+    sequence_extractor: Callable[[_FullSequenceEntry], str],
 ) -> None:
     lines: List[str] = []
-    for label, result in entries:
-        main_seq = context.rebuild_main_with_exons(result.exon_sequence)
-        converted = converter(main_seq)
-        lines.append(_multifasta_header(label, result.energy, result.boundary_pair_score))
-        lines.append(converted)
+    for entry in entries:
+        lines.append(
+            _multifasta_header(entry.label, entry.result.energy, entry.result.boundary_pair_score)
+        )
+        lines.append(sequence_extractor(entry))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _sum_bpp_values(bpp_matrix, sequence_length: int) -> List[float]:
+    totals = [0.0] * sequence_length
+    if sequence_length == 0:
+        return totals
+    for i_one, j_one, prob in SequenceEvaluator._iter_bpp_entries(bpp_matrix):
+        i = i_one - 1
+        j = j_one - 1
+        if 0 <= i < sequence_length:
+            totals[i] += prob
+        if 0 <= j < sequence_length:
+            totals[j] += prob
+    return totals
+
+
+def _compute_sequence_stem_probabilities(task: tuple[str, str]) -> tuple[str, List[float]]:
+    label, sequence = task
+    fold_compound = RNA.fold_compound(sequence)
+    _, mfe = fold_compound.mfe()
+    fold_compound.exp_params_rescale(mfe)
+    fold_compound.pf()
+    bpp_matrix = fold_compound.bpp()
+    values = _sum_bpp_values(bpp_matrix, len(sequence))
+    return label, values
+
+
+def _compute_stem_probabilities(
+    entries: Sequence[_FullSequenceEntry],
+    max_workers: int | None,
+) -> dict[str, List[float]]:
+    tasks = [(entry.label, entry.rna_sequence) for entry in entries]
+    if not tasks:
+        return {}
+    if max_workers == 1:
+        results = [_compute_sequence_stem_probabilities(task) for task in tasks]
+    else:
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(_compute_sequence_stem_probabilities, tasks))
+    return {label: values for label, values in results}
+
+
+def _write_combined_stem_probability_tsv(
+    path: Path, entries: Sequence[_FullSequenceEntry], probabilities: dict[str, List[float]]
+) -> None:
+    sequence_length = max(len(entry.rna_sequence) for entry in entries)
+    header = ["name"] + [str(idx) for idx in range(sequence_length)]
+    lines = ["\t".join(header)]
+    for entry in entries:
+        values = probabilities.get(entry.label, [])
+        rounded = [
+            f"{values[idx]:.2f}" if idx < len(values) else ""
+            for idx in range(sequence_length)
+        ]
+        lines.append("\t".join([entry.label] + rounded))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -184,15 +255,21 @@ def main() -> None:
     print(f"Boundary score: {best.boundary_pair_score:.4f}; Energy: {best.energy:.4f}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    entries = _collect_main_entries(best, ga.final_population)
+    entries = _collect_full_sequence_entries(context, best, ga.final_population)
     dna_path = output_dir / f"{output_prefix}_dna_main_sequences.fa"
     rna_path = output_dir / f"{output_prefix}_rna_main_sequences.fa"
-    _write_main_multifasta(dna_path, context, entries, lambda seq: seq)
-    _write_main_multifasta(rna_path, context, entries, _dna_to_rna)
+    _write_full_multifasta(dna_path, entries, lambda entry: entry.dna_sequence)
+    _write_full_multifasta(rna_path, entries, lambda entry: entry.rna_sequence)
+
+    stem_probabilities = _compute_stem_probabilities(entries, parallel_workers)
+    stem_path = output_dir / f"{output_prefix}_stem_prob.tsv"
+    _write_combined_stem_probability_tsv(stem_path, entries, stem_probabilities)
+
     metrics_path = output_dir / f"{output_prefix}_metrics.png"
     _plot_generation_metrics(ga.generation_metrics, metrics_path)
     print(f"DNA multifasta written to {dna_path}")
     print(f"RNA multifasta written to {rna_path}")
+    print(f"Stem probability TSV written to {stem_path}")
     print(f"Generation metric plot written to {metrics_path}")
 
 

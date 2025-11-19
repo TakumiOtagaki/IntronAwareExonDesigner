@@ -126,7 +126,5 @@ GAのベスト解を初期値として局所最適化を行う。
 ## 6. print や log
  - 特定の step ごとに best や 1q などを表示する
  - 最終 output の際には baseline (初期配列) との比較がわかりやすくできるようにしておく.
-
-
-## misc.
-archives/intron_design.py にはかつての誤った実装がある。しかし multifasta の parsing などのコードは残っているので i/o 周りだけ、少し参考にしてくれても良い。
+ - 複数の sequence を出力できるようにする.
+ - 出力は rna と dna の指定した方で行うようにする.

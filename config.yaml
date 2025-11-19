@@ -1,8 +1,8 @@
 window_upstream: 60
 window_downstream: 30
 weights:
-  alpha: 1.0
-  beta: 1.0
+  alpha: 30.0 # for boundary score
+  beta: 1.0 # for ensemble free energy
 temperature:
   initial: 1.0
   decay: 0.995

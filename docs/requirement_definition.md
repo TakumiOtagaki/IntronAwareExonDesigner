@@ -8,11 +8,9 @@
 
 ### 2.1 入力データ (Config)
 * **固定情報**:
-    - 5utr, main(intron + exon), 3utr の multifasta file と アミノ酸配列を受け取る。intron は複数存在することも想定する.
-    * `seq_upstream_aa`: 上流エクソンのアミノ酸配列（またはDNA配列 → アミノ酸に翻訳して保持）
-    * `seq_intron`: イントロンの塩基配列（完全固定）
-    * `seq_downstream_aa`: 下流エクソンのアミノ酸配列
-    --> 例：`data/chimera.fa`
+    - スプライシング後のアミノ酸配列: `data/aminoacid.fa`
+    - 初期配列: `data/chimera.fa`
+        - 5utr, main(intron + exon), 3utr の multifasta file と アミノ酸配列を受け取る。intron は複数存在することも想定する.
 * **パラメータ**:
     * `window_size`: 構造計算を行う範囲（例: イントロンを中心に上流60nt + 下流30nt）
     * `weights`: 目的関数の重み係数 $\alpha$ (構造エネルギー), $\beta$ (末端対合確率)
@@ -120,3 +118,8 @@ GAのベスト解を初期値として局所最適化を行う。
     * 続いて並列化を実施
 3.  **Step 3: 並列化とMCMCの追加**
     * `concurrent.futures` で高速化し、最後にMCMCループを足す。
+
+
+## 6. print や log
+ - 特定の step ごとに best や 1q などを表示する
+ - 最終 output の際には baseline (初期配列) との比較がわかりやすくできるようにしておく.

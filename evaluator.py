@@ -217,6 +217,7 @@ class SequenceEvaluator:
             n_rows = len(bpp_matrix)
             for i in range(n_rows):
                 row = bpp_matrix[i]
+                # for j in range(len(row)):
                 for j in range(i + 1, len(row)):
                     p = float(row[j])
                     if p > 0.0:

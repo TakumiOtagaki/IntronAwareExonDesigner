@@ -14,3 +14,4 @@ ga:
 output:
   sequence: dna
   allow_rna: true
+parallel_workers: 5

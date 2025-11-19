@@ -49,6 +49,7 @@ def main() -> None:
     parser.add_argument("--population", type=int, help="Override GA population size.")
     parser.add_argument("--mutation", type=float, help="Override GA mutation rate.")
     parser.add_argument("--tournament", type=int, help="Override GA tournament size.")
+    parser.add_argument("--workers", type=int, help="Override GA parallel_workers setting.")
     parser.add_argument("--seed", type=int, help="Deterministic RNG seed.")
     args = parser.parse_args()
 
@@ -58,6 +59,12 @@ def main() -> None:
     mutation_rate = args.mutation if args.mutation is not None else ga_section.get("mutation_rate", 0.05)
     tournament_size = args.tournament if args.tournament is not None else ga_section.get("tournament_size", 3)
     seed = args.seed
+    workers_override = args.workers
+    parallel_workers = (
+        workers_override
+        if workers_override is not None
+        else ga_section.get("parallel_workers", config.get("parallel_workers"))
+    )
 
     evaluator_config = EvaluatorConfig(
         window_upstream=config.get("window_upstream", 60),
@@ -85,6 +92,7 @@ def main() -> None:
         generations=generations,
         mutation_rate=mutation_rate,
         tournament_size=tournament_size,
+        parallel_workers=parallel_workers,
     )
     rng = Random(seed)
     ga = GeneticAlgorithm(evaluator, config=ga_config, rng=rng)
@@ -101,6 +109,7 @@ def main() -> None:
     print(f"Cost history: {history}")
     print(f"Best cost: {best.cost:.4f}")
     print(f"Best genotype: {best.genotype}")
+    print(f"Parallel workers: {parallel_workers or 'disabled'}")
     print(f"Best full (DNA) sequence snippet: {snippet}")
     print(f"Best full (RNA) sequence snippet: {_sequence_snippet(rna_full)}")
     print(f"Boundary score: {best.boundary_pair_score:.4f}; Energy: {best.energy:.4f}")

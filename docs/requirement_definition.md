@@ -8,15 +8,19 @@
 
 ### 2.1 入力データ (Config)
 * **固定情報**:
+    - 5utr, main(intron + exon), 3utr の multifasta file と アミノ酸配列を受け取る。intron は複数存在することも想定する.
     * `seq_upstream_aa`: 上流エクソンのアミノ酸配列（またはDNA配列 → アミノ酸に翻訳して保持）
     * `seq_intron`: イントロンの塩基配列（完全固定）
     * `seq_downstream_aa`: 下流エクソンのアミノ酸配列
+    --> 例：`data/chimera.fa`
 * **パラメータ**:
     * `window_size`: 構造計算を行う範囲（例: イントロンを中心に上流60nt + 下流30nt）
     * `weights`: 目的関数の重み係数 $\alpha$ (構造エネルギー), $\beta$ (末端対合確率)
     * `temperature`: MCMCの初期温度と減衰率
+    --> `config.yaml` を作成する
 
 ### 2.2 遺伝子表現 (Genotype)
+
 GAおよびMCMCで操作する対象。
 * **形式**: 整数リスト `List[int]`
 * **定義**: 各アミノ酸位置における「同義コドンリスト内のインデックス」。
@@ -26,7 +30,7 @@ GAおよびMCMCで操作する対象。
 ### 2.3 コドンテーブル (Lookup Table)
 * **構造**: `Dict[str, List[str]]` (Amino Acid 1文字表記 -> コドン文字列のリスト)
     * 例: `{'L': ['TTA', 'TTG', 'CTT', 'CTC', 'CTA', 'CTG'], ...}`
-
+    -->. `Bio.Data.CodonTable.unambiguous_dna_by_id[1]` が NCBI table 1 であり、これを jsonl に変換しておく.
 ---
 
 ## 3. コアロジック: 配列構築と評価関数
@@ -79,6 +83,7 @@ $$Cost = \alpha \cdot (\sum_{pos \in Ends} P_{pair}(pos)) - \beta \cdot (Energy_
         * 確率 $P_s$ で発動。
         * 評価時に `bpp` が高かった（強くペアを組んでいる）エクソン領域の塩基を特定。
         * その塩基を含むコドンを、「GC含量が低い」または「元の塩基と異なる」同義コドンへ強制変更。
+    - まずは random mutation だけの実装をしましょう.
 
 ### 4.2 MCMC / Simulated Annealing フェーズ
 GAのベスト解を初期値として局所最適化を行う。

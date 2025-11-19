@@ -81,6 +81,9 @@ def _plot_generation_metrics(metrics: Iterable[dict[str, float]], destination: P
         ax.plot(generations, [entry[mean_key] for entry in data], label="mean", marker="o")
         ax.plot(generations, [entry[min_key] for entry in data], label="min", marker="s")
         ax.set_ylabel(label)
+        if "alpha_bpp" in prefix:
+            # y --> log scale
+            ax.set_yscale("log")
         ax.grid(True, linestyle="--", alpha=0.5)
         ax.legend()
     axes[-1].set_xlabel("Generation")

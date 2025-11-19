@@ -14,4 +14,6 @@ ga:
 output:
   sequence: dna
   allow_rna: true
+  directory: outputs
+  prefix: intron_design
 parallel_workers: 7

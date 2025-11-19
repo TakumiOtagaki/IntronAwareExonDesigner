@@ -5,7 +5,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 from random import Random
-from typing import Any, Iterable, List
+from typing import Any, Callable, Iterable, List
 import yaml
 from matplotlib import pyplot as plt
 
@@ -29,25 +29,36 @@ def _sequence_snippet(sequence: str, width: int = 80) -> str:
     return f"{sequence[:segment]}…{sequence[-segment:]}"
 
 
+def _dna_to_rna(sequence: str) -> str:
+    return sequence.replace("T", "U").replace("t", "u")
+
+
 def _multifasta_header(label: str, energy: float, boundary_score: float) -> str:
     return f">{label} | efe={energy:.4f} | sum_bpp={boundary_score:.4f}"
+
+
+def _collect_main_entries(
+    best_result: EvaluationResult, final_population: Iterable[EvaluationResult]
+) -> List[tuple[str, EvaluationResult]]:
+    entries: List[tuple[str, EvaluationResult]] = [
+        ("main best", best_result),
+    ]
+    entries.extend((f"main final_population{idx}", result) for idx, result in enumerate(final_population))
+    return entries
 
 
 def _write_main_multifasta(
     path: Path,
     context: IntronAwaredExonDesignerContext,
-    best_result: EvaluationResult,
-    final_population: Iterable[EvaluationResult],
+    entries: Iterable[tuple[str, EvaluationResult]],
+    converter: Callable[[str], str],
 ) -> None:
     lines: List[str] = []
-    best_main = context.rebuild_main_with_exons(best_result.exon_sequence)
-    lines.append(_multifasta_header("main best", best_result.energy, best_result.boundary_pair_score))
-    lines.append(best_main)
-    for idx, result in enumerate(final_population):
+    for label, result in entries:
         main_seq = context.rebuild_main_with_exons(result.exon_sequence)
-        header = _multifasta_header(f"main final_population{idx}", result.energy, result.boundary_pair_score)
-        lines.append(header)
-        lines.append(main_seq)
+        converted = converter(main_seq)
+        lines.append(_multifasta_header(label, result.energy, result.boundary_pair_score))
+        lines.append(converted)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -173,11 +184,15 @@ def main() -> None:
     print(f"Boundary score: {best.boundary_pair_score:.4f}; Energy: {best.energy:.4f}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    fasta_path = output_dir / f"{output_prefix}_main_sequences.fa"
-    _write_main_multifasta(fasta_path, context, best, ga.final_population)
+    entries = _collect_main_entries(best, ga.final_population)
+    dna_path = output_dir / f"{output_prefix}_dna_main_sequences.fa"
+    rna_path = output_dir / f"{output_prefix}_rna_main_sequences.fa"
+    _write_main_multifasta(dna_path, context, entries, lambda seq: seq)
+    _write_main_multifasta(rna_path, context, entries, _dna_to_rna)
     metrics_path = output_dir / f"{output_prefix}_metrics.png"
     _plot_generation_metrics(ga.generation_metrics, metrics_path)
-    print(f"Main sequence multifasta written to {fasta_path}")
+    print(f"DNA multifasta written to {dna_path}")
+    print(f"RNA multifasta written to {rna_path}")
     print(f"Generation metric plot written to {metrics_path}")
 
 

@@ -64,6 +64,8 @@ class GeneticAlgorithm:
         self.population: List[List[int]] = []
         self.best_result: EvaluationResult | None = None
         self.cost_history: List[float] = []
+        self.best_candidates: List[EvaluationResult] = []
+        self.final_population: List[EvaluationResult] = []
         self._validate_config()
 
     @property
@@ -83,6 +85,8 @@ class GeneticAlgorithm:
     def run(self, generations: int | None = None) -> EvaluationResult:
         """Execute the GA for `generations` iterations and return the best solution."""
         self.cost_history = []
+        self.best_candidates = []
+        self.final_population = []
         self.population = self._initialize_population()
         evaluated = self._evaluate_population(self.population)
         self._record_best(evaluated)
@@ -102,6 +106,7 @@ class GeneticAlgorithm:
 
         if self.best_result is None:
             raise RuntimeError("GA run did not produce any evaluation results.")
+        self.final_population = [result for _, result in evaluated]
         return self.best_result
 
     def _initialize_population(self) -> List[List[int]]:
@@ -134,8 +139,17 @@ class GeneticAlgorithm:
         for _, result in evaluated:
             if self.best_result is None or result.cost < self.best_result.cost:
                 self.best_result = result
+                self.best_candidates.append(result)
         if self.best_result is not None:
             self.cost_history.append(self.best_result.cost)
+
+    @property
+    def best_full_sequences(self) -> List[str]:
+        return [result.full_sequence for result in self.best_candidates]
+
+    @property
+    def final_pool_full_sequences(self) -> List[str]:
+        return [result.full_sequence for result in self.final_population]
 
     def _breed_population(
         self, evaluated: Sequence[Tuple[List[int], EvaluationResult]]

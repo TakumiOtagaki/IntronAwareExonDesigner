@@ -61,3 +61,6 @@ Forna
  - Kerpedjiev P, Hammer S, Hofacker IL (2015). Forna (force-directed RNA): Simple and effective online RNA secondary structure diagrams. Bioinformatics 31(20):3377-9.
 
 
+# Future work
+We plan to optimize the hairpin (or another loop-type) probability near intron splice sites, which might improve the splicing efficiency.
+It can be utilized for the ensemble awared RNA inverse folding.

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import RNA
+
 from collections import defaultdict
 from dataclasses import dataclass, field
 from random import Random
@@ -119,7 +121,6 @@ class SequenceEvaluator:
         self.codon_lookup = codon_lookup or CodonLookup()
         self.decoder = GenotypeDecoder(context.amino_acid_sequence, self.codon_lookup)
         self._sequence_cache: Dict[str, Tuple[float, float]] = {}
-        self._rna_module = None
 
     @property
     def design_length(self) -> int:
@@ -147,7 +148,6 @@ class SequenceEvaluator:
         return metrics
 
     def _evaluate_sequence(self, sequence: str) -> Tuple[float, float]:
-        RNA = self._load_rna()
         fold_compound = RNA.fold_compound(sequence)
         pf_result = fold_compound.pf()
         if isinstance(pf_result, tuple):
@@ -157,17 +157,6 @@ class SequenceEvaluator:
         bpp_matrix = fold_compound.bpp()
         boundary_score = self._boundary_pair_probability(bpp_matrix)
         return boundary_score, energy
-
-    def _load_rna(self):
-        if self._rna_module is None:
-            try:
-                import RNA  # type: ignore[import]
-            except ModuleNotFoundError as exc:
-                raise RuntimeError(
-                    "ViennaRNA Python bindings ('RNA') are required for sequence evaluation."
-                ) from exc
-            self._rna_module = RNA
-        return self._rna_module
 
     def _boundary_pair_probability(self, bpp_matrix) -> float:
         weights: Dict[int, float] = defaultdict(float)

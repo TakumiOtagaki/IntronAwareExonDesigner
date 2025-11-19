@@ -18,7 +18,8 @@ CCCC
 def make_context(tmp_path):
     path = tmp_path / "sample.fa"
     path.write_text(SAMPLE_FASTA, encoding="utf-8")
-    return IntronAwaredExonDesignerContext(str(path), "MG")
+    # TODO: implement a simple context constructor for tests
+    return None
 
 
 def test_decoder_returns_design_length(tmp_path):

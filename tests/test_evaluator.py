@@ -1,9 +1,14 @@
 """Tests for the evaluator components using a lightweight ViennaRNA stub."""
 
 import math
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
 from evaluator import SequenceEvaluator
-
+from intron_design import IntronAwaredExonDesignerContext
 
 SAMPLE_FASTA = """\
 >5utr
@@ -18,8 +23,7 @@ CCCC
 def make_context(tmp_path):
     path = tmp_path / "sample.fa"
     path.write_text(SAMPLE_FASTA, encoding="utf-8")
-    # TODO: implement a simple context constructor for tests
-    return None
+    return IntronAwaredExonDesignerContext(path, "MG")
 
 
 def test_decoder_returns_design_length(tmp_path):

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from random import Random
 from collections.abc import Sequence as AbcSequence
 from typing import Dict, Iterator, List, Mapping, Sequence, Tuple
+import sys
 
 from Bio.Data import CodonTable
 
@@ -134,6 +135,10 @@ class SequenceEvaluator:
         self.decoder = GenotypeDecoder(context.amino_acid_sequence, self.codon_lookup)
         self._sequence_cache: Dict[str, Tuple[float, float]] = {}
 
+    def evaluate_rna_sequence(self, sequence: str) -> Tuple[float, float]:
+        """Return the boundary score and energy for an already-built RNA string."""
+        return self._cached_evaluate(sequence)
+
     @property
     def design_length(self) -> int:
         return self.decoder.length
@@ -162,18 +167,40 @@ class SequenceEvaluator:
 
     def _evaluate_sequence(self, sequence: str) -> Tuple[float, float]:
         fold_compound = RNA.fold_compound(sequence)
-        pf_result = fold_compound.pf()
-        if isinstance(pf_result, tuple) or isinstance(pf_result, list):
-            energy = float(pf_result[-1])
-        elif isinstance(pf_result, AbcSequence) and not isinstance(pf_result, (str, bytes)):
-            energy = float(pf_result[-1])
-        else:
-            energy = float(pf_result)
-        bpp_matrix = fold_compound.bpp()
-        boundary_score = self._boundary_pair_probability(bpp_matrix)
+        ss, mfe = fold_compound.mfe()
+        fold_compound.exp_params_rescale(mfe)
+        fold_compound.pf()
+        boundary_score = self._boundary_pair_probability(fold_compound.bpp())
+        energy = self._sum_intron_window_energy(sequence)
         return boundary_score, energy
 
+    def _sum_intron_window_energy(self, sequence: str) -> float:
+        total_energy = 0.0
+        if not self.context.intron_segments:
+            return total_energy
+        for start, end in self.context.get_intron_window_ranges(
+            upstream=self.config.window_upstream, downstream=self.config.window_downstream
+        ):
+            if start >= end:
+                continue
+            window_sequence = sequence[start:end]
+            if not window_sequence:
+                continue
+            fold_compound = RNA.fold_compound(window_sequence)
+            window_pf = fold_compound.pf()
+            total_energy += self._extract_energy_from_pf_result(window_pf)
+        return total_energy
+
+    def _extract_energy_from_pf_result(self, pf_result) -> float:
+        if isinstance(pf_result, (tuple, list)):
+            return float(pf_result[-1])
+        if isinstance(pf_result, AbcSequence) and not isinstance(pf_result, (str, bytes)):
+            return float(pf_result[-1])
+        return float(pf_result)
+
     def _boundary_pair_probability(self, bpp_matrix) -> float:
+        # print("BPP matrix:", bpp_matrix)
+        # sys.exit()
         weights: Dict[int, float] = defaultdict(float)
         for i, j, prob in self._iter_bpp_entries(bpp_matrix):
             weights[i - 1] += prob

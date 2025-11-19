@@ -162,6 +162,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rna" },
     { name = "tqdm" },
+    { name = "viennarna" },
 ]
 
 [package.metadata]
@@ -174,6 +175,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "rna", specifier = ">=0.13.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
+    { name = "viennarna", specifier = ">=2.7.0" },
 ]
 
 [[package]]
@@ -581,4 +583,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/95/32/1a225d6164441be760d75c2c42e2780dc0873fe382da3e98a2e1e48361e5/tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9", size = 196380, upload-time = "2025-03-23T13:54:43.652Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/23/c7abc0ca0a1526a0774eca151daeb8de62ec457e77262b66b359c3c7679e/tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8", size = 347839, upload-time = "2025-03-23T13:54:41.845Z" },
+]
+
+[[package]]
+name = "viennarna"
+version = "2.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/94/c65cfb4666efed90fc0fc241ee646054c5f1f7d16e83a39ab43ce7dfbe35/viennarna-2.7.0.tar.gz", hash = "sha256:443dcf98615b667f2cda96ed6b6660f32cba9b7a8b944563bc20a9754f3c9ca3", size = 5925456, upload-time = "2024-10-11T21:37:14.451Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/c1/ef2bfd2b91641e0412a794968d5adb9aafd40992621fb5386cc836cea04d/ViennaRNA-2.7.0-cp313-cp313-macosx_10_14_x86_64.whl", hash = "sha256:2ea96d0b6c3db03ec2582933aed4fd50c6f9d9cb1b9318573f8e0eb692d3f33a", size = 2539813, upload-time = "2024-10-11T21:36:42.796Z" },
+    { url = "https://files.pythonhosted.org/packages/97/c8/ba889f0a455e9cb41e52bb5a6617a1ab88d114e25ca797c436816f7cf311/ViennaRNA-2.7.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:b5b1c4ac0f79a938eb836e730d600f30f633ffcb115823ccf147b6e81221b6cd", size = 2338000, upload-time = "2024-10-11T21:36:44.401Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/f9/136bcb00c5169b53299a6c65ffb9572c76c142c578d251b121aaffdc0773/ViennaRNA-2.7.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2e10c2f0d29b1b964252f95ee45630a6becc8b0ef3b7421a12ccc5cfb755872e", size = 12779942, upload-time = "2024-10-11T21:36:46.022Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/61/44e8f1be14dee657b1d0faa617c1dfd6b288cb739c4c3fbf9a7832305e22/ViennaRNA-2.7.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5f5a56104bfc01accbfb58c675ad7a0933c84543c1da48efd56557bc6ee1dd2b", size = 13233871, upload-time = "2024-10-11T21:36:48.477Z" },
+    { url = "https://files.pythonhosted.org/packages/33/c4/d969033090c802b96b766fc85b61457a290d5f38c03e7686f229aef8ba71/ViennaRNA-2.7.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:b90ea2414027a3da10e685052d1d09f9d420368eac49c848099a6083c5208d56", size = 12826268, upload-time = "2024-10-11T21:36:51.193Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/d1/85916f237369640fc85aff22392ecf4fb19355c200190da2ae5772ed6aa1/ViennaRNA-2.7.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:13d196f303969da031342cd1842d822b15e32ef19bcefa769868fc9cd566d18c", size = 13404971, upload-time = "2024-10-11T21:36:53.636Z" },
+    { url = "https://files.pythonhosted.org/packages/31/ee/658f195f7f744d01d8d5261262c17257778bd62bf8e407c83ef207fb17b7/ViennaRNA-2.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:7fc788f17e62c55937c341da8229df837a9ce0f58774cc879d6c1a794f338123", size = 1927012, upload-time = "2024-10-11T21:36:56.102Z" },
 ]

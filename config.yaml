@@ -7,8 +7,8 @@ temperature:
   initial: 1.0
   decay: 0.995
 ga:
-  population_size: 16 # parallel_workers で割り切られる値が望ましい.
-  generations: 30
+  population_size: 8 # parallel_workers で割り切られる値が望ましい.
+  generations: 5
   mutation_rate: 0.05
   tournament_size: 3 # 大きいほど早熟収束のリスク, 小さいと探索範囲は広まるが収束が遅くなる. デフォルトは3.
 output:

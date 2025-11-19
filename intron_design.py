@@ -21,8 +21,8 @@ def _normalize_rna_with_case(sequence: str) -> str:
         "c": "c",
         "G": "G",
         "g": "g",
-        "T": "U",
-        "t": "u",
+        "T": "T",
+        "t": "t",
         "U": "U",
         "u": "u",
     }
@@ -132,17 +132,25 @@ class IntronAwaredExonDesignerContext:
             raise ValueError(
                 f"Exon design length {len(exon_design)} does not match expected {self.design_length}"
             )
-        exon_design = exon_design.upper().replace("T", "U")
+        exon_design = exon_design.upper()
         main_chars = list(self.main_sequence)
         for idx, pos in enumerate(self.exon_positions):
             main_chars[pos] = exon_design[idx]
         return "".join(main_chars)
 
-    def build_full_sequence(self, exon_design: str, uppercase: bool = True) -> str:
-        """Construct the full RNA sequence (UTR + main + UTR) for evaluation."""
+    def build_full_sequence(
+        self, exon_design: str, uppercase: bool = True, rna_output: bool = False
+    ) -> str:
+        """
+        Construct the full RNA or DNA sequence (UTR + main + UTR) for evaluation/output.
+        """
         main_seq = self.rebuild_main_with_exons(exon_design)
         full = f"{self.utr5}{main_seq}{self.utr3}"
-        return full.upper() if uppercase else full
+        if uppercase:
+            full = full.upper()
+        if rna_output:
+            full = full.replace("T", "U").replace("t", "u")
+        return full
 
     def get_intron_window_ranges(self, upstream: int, downstream: int) -> List[Tuple[int, int]]:
         """

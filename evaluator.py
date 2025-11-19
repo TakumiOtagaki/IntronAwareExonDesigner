@@ -129,7 +129,8 @@ class SequenceEvaluator:
     def evaluate(self, genotype: Sequence[int]) -> EvaluationResult:
         exon_design = self.decoder.decode(genotype)
         full_sequence = self.context.build_full_sequence(exon_design)
-        boundary_score, energy = self._cached_evaluate(full_sequence)
+        rna_sequence = self.context.build_full_sequence(exon_design, rna_output=True)
+        boundary_score, energy = self._cached_evaluate(rna_sequence)
         cost = self.config.alpha * boundary_score - self.config.beta * energy
         return EvaluationResult(
             genotype=tuple(genotype),

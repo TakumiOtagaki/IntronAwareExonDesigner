@@ -212,27 +212,6 @@ class SequenceEvaluator:
 
     @staticmethod
     def _iter_bpp_entries(bpp_matrix) -> Iterator[Tuple[int, int, float]]:
-        # (i, j) -> prob の dict 形式
-        if isinstance(bpp_matrix, Mapping):
-            for coords, prob in bpp_matrix.items():
-                if (
-                    isinstance(coords, tuple)
-                    and len(coords) == 2
-                ):
-                    i, j = coords
-                    yield int(i) - 1, int(j) - 1, float(prob)
-            return
-
-        # numpy の 2D 配列
-        if hasattr(bpp_matrix, "shape"):
-            n_rows = bpp_matrix.shape[0]
-            for i in range(n_rows):
-                for j in range(i + 1, n_rows):
-                    p = float(bpp_matrix[i, j])
-                    if p > 0.0:
-                        yield i, j, p
-            return
-
         # list-of-lists な 2D 配列
         if isinstance(bpp_matrix, (list, tuple)) and bpp_matrix and isinstance(bpp_matrix[0], (list, tuple)):
             n_rows = len(bpp_matrix)
@@ -243,20 +222,3 @@ class SequenceEvaluator:
                     if p > 0.0:
                         yield i, j, p
             return
-
-        # それ以外（plist っぽい形式）のバックアップ
-        for entry in bpp_matrix:
-            if isinstance(entry, tuple) and len(entry) == 3:
-                yield int(entry[0]) - 1, int(entry[1]) - 1, float(entry[2])
-                continue
-
-            i = getattr(entry, "i", None) or getattr(entry, "I", None)
-            j = getattr(entry, "j", None) or getattr(entry, "J", None)
-            prob = (
-                getattr(entry, "p", None)
-                or getattr(entry, "prob", None)
-                or getattr(entry, "probability", None)
-            )
-            if i is None or j is None or prob is None:
-                continue
-            yield int(i) - 1, int(j) - 1, float(prob)

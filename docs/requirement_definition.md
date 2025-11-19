@@ -11,6 +11,7 @@
     - スプライシング後のアミノ酸配列: `data/aminoacid.fa`
     - 初期配列: `data/chimera.fa`
         - 5utr, main(intron + exon), 3utr の multifasta file と アミノ酸配列を受け取る。intron は複数存在することも想定する.
+        - >main sequence のうち、intron 領域は小文字で書かれていて、exon 領域は大文字で書かれている
 * **パラメータ**:
     * `window_size`: 構造計算を行う範囲（例: イントロンを中心に上流60nt + 下流30nt）
     * `weights`: 目的関数の重み係数 $\alpha$ (構造エネルギー), $\beta$ (末端対合確率)
@@ -36,10 +37,12 @@ GAおよびMCMCで操作する対象。
 ### 3.1 配列構築 (Decoder)
 Genotype（インデックス列）から表現型（塩基配列文字列）へ変換する処理。
 * `decode(genotype) -> str`:
-    1.  上流コドンインデックス列を塩基配列に変換。
-    2.  イントロン配列（固定）を結合。
-    3.  下流コドンインデックス列を塩基配列に変換。
-    4.  結合して完全なターゲット配列を返す。
+    1. アミノ酸配列を受け取って index 列（のような object）を生成
+    2.  イントロン配列（固定）と 5utr と 3utr 配列を固定.
+    3.  GA に映る
+        - bpp を 5utr + main + 3utr に対して計算する（次節）
+        - intron の上流の 60 塩基と intron の下流 30 塩基を intron に結合し、ensemble free energy を計算する. (次節)
+            - intron が複数あればそれぞれについて計算して合計値を取る
 
 ### 3.2 目的関数 (Cost Function)
 最小化問題として定義する。スコアが低いほど良い。

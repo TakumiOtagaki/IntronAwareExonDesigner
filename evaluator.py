@@ -96,6 +96,17 @@ class GenotypeDecoder:
         rng = rng or Random()
         return [rng.randrange(len(options)) for options in self._codon_options]
 
+    def random_allele(self, locus: int, rng: Random | None = None) -> int:
+        """Return a random allele index for the given locus."""
+        rng = rng or Random()
+        options = self._codon_options[locus]
+        return rng.randrange(len(options))
+
+    @property
+    def allele_counts(self) -> Tuple[int, ...]:
+        """Return the count of synonymous codons available at each locus."""
+        return tuple(len(options) for options in self._codon_options)
+
 
 @dataclass(frozen=True)
 class EvaluationResult:

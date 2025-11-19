@@ -21,17 +21,38 @@ uv sync
 ## Running a GA experiment
 
 1. Prepare `data/chimera.fa` and `data/aminoacid.fa` following the FASTA conventions used by `IntronAwaredExonDesignerContext`.
-2. Run `run_ga.py` with optional overrides:
+2. Rewrite `config.yaml` as you like.
+3. Run `run_ga.py`.
 
 ```bash
-python3 run_ga.py --generations 5 --population 20 --output-dir outputs --output-prefix intron_design
+uv run python run_ga.py
 ```
 
-3. Results are written to `outputs/`:
+or you can override the config.yaml settings with arguments, like;
+
+```bash
+uv run python run_ga.py --generations 10 --population 5
+```
+
+
+4. Results are written to `outputs/`:
    - `intron_design_dna_main_sequences.fa` / `intron_design_rna_main_sequences.fa` contain population members with `efe` and `sum_bpp` annotations.
    - `intron_design_stem_prob.tsv` summarizes per-base stem probabilities for later visualization.
       - You can utilize this tsv file to understand base pairing probability on forna visualization server (http://rna.tbi.univie.ac.at/forna/).
    - `intron_design_metrics.png` plots the GA statistics (α·sum_bpp, β·(-EFE), mix).
+
+## example
+Run with the default parameters,
+
+```bash
+uv run python run_ga.py
+```
+
+we obtained a nice result. We copy & pasted the best sequence on Forna server, then put the corresponding row of  `outputs/intron_design_stem_prob.tsv` on Forna's "Colors" option,
+then the result of visualization is as following:
+
+<img></img>
+
 
 ## Evaluating sequences
 

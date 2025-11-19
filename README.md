@@ -42,17 +42,13 @@ uv run python run_ga.py --generations 10 --population 5
    - `intron_design_metrics.png` plots the GA statistics (α·sum_bpp, β·(-EFE), mix).
 
 ## example
-Run with the default parameters,
+## Example visualization
 
-```bash
-uv run python run_ga.py
-```
+After running the GA with the default configuration, paste the best RNA sequence (`outputs/..._rna_main_sequences.fa`) into [Forna](http://rna.tbi.univie.ac.at/forna/) and upload the matching `intron_design_stem_prob.tsv` row via the “Colors” tab. This overlays stem probabilities onto the MFE structure—here is the result from a sample run:
 
-we obtained a nice result. We copy & pasted the best sequence on Forna server, then put the corresponding row of  `outputs/intron_design_stem_prob.tsv` on Forna's "Colors" option,
-then the result of visualization is as following:
+![Forna example](img/example.png)
 
-<img></img>
-
+As you can see, the 3 leftmost and right most bases do not form base pair, and the probabilities of base pairing are low (white means low probability).
 
 ## Evaluating sequences
 

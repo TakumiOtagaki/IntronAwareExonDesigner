@@ -66,6 +66,7 @@ class GeneticAlgorithm:
         self.cost_history: List[float] = []
         self.best_candidates: List[EvaluationResult] = []
         self.final_population: List[EvaluationResult] = []
+        self.generation_metrics: List[dict[str, float]] = []
         self._validate_config()
 
     @property
@@ -87,9 +88,11 @@ class GeneticAlgorithm:
         self.cost_history = []
         self.best_candidates = []
         self.final_population = []
+        self.generation_metrics = []
         self.population = self._initialize_population()
         evaluated = self._evaluate_population(self.population)
         self._record_best(evaluated)
+        self._record_generation_stats(evaluated, generation=0)
         print(
             "Starting GA run with "
             f"population_size={self.config.population_size}, "
@@ -99,10 +102,11 @@ class GeneticAlgorithm:
         )
 
         max_generations = generations if generations is not None else self.config.generations
-        for _ in tqdm(range(max_generations), desc="GA generations", unit="gen"):
+        for generation_index in tqdm(range(max_generations), desc="GA generations", unit="gen"):
             self.population = self._breed_population(evaluated)
             evaluated = self._evaluate_population(self.population)
             self._record_best(evaluated)
+            self._record_generation_stats(evaluated, generation=generation_index + 1)
 
         if self.best_result is None:
             raise RuntimeError("GA run did not produce any evaluation results.")
@@ -142,6 +146,30 @@ class GeneticAlgorithm:
                 self.best_candidates.append(result)
         if self.best_result is not None:
             self.cost_history.append(self.best_result.cost)
+
+    def _record_generation_stats(
+        self, evaluated: Iterable[Tuple[List[int], EvaluationResult]], generation: int
+    ) -> None:
+        results = [result for _, result in evaluated]
+        if not results:
+            return
+        alpha = self.evaluator.config.alpha
+        beta = self.evaluator.config.beta
+        alpha_bpp = [alpha * result.boundary_pair_score for result in results]
+        beta_minus_efe = [beta * (-result.energy) for result in results]
+        alpha_beta_mix = [alpha * result.boundary_pair_score + beta * (-result.energy) for result in results]
+        count = len(results)
+        self.generation_metrics.append(
+            {
+                "generation": generation,
+                "alpha_bpp_mean": sum(alpha_bpp) / count,
+                "alpha_bpp_min": min(alpha_bpp),
+                "beta_minus_efe_mean": sum(beta_minus_efe) / count,
+                "beta_minus_efe_min": min(beta_minus_efe),
+                "alpha_beta_mix_mean": sum(alpha_beta_mix) / count,
+                "alpha_beta_mix_min": min(alpha_beta_mix),
+            }
+        )
 
     @property
     def best_full_sequences(self) -> List[str]:

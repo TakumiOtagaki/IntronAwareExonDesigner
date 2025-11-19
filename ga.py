@@ -42,6 +42,7 @@ class GeneticAlgorithm:
         self.rng = rng or Random()
         self.population: List[List[int]] = []
         self.best_result: EvaluationResult | None = None
+        self.cost_history: List[float] = []
         self._validate_config()
 
     @property
@@ -58,6 +59,7 @@ class GeneticAlgorithm:
 
     def run(self, generations: int | None = None) -> EvaluationResult:
         """Execute the GA for `generations` iterations and return the best solution."""
+        self.cost_history = []
         self.population = self._initialize_population()
         evaluated = self._evaluate_population(self.population)
         self._record_best(evaluated)
@@ -84,6 +86,8 @@ class GeneticAlgorithm:
         for _, result in evaluated:
             if self.best_result is None or result.cost < self.best_result.cost:
                 self.best_result = result
+        if self.best_result is not None:
+            self.cost_history.append(self.best_result.cost)
 
     def _breed_population(
         self, evaluated: Sequence[Tuple[List[int], EvaluationResult]]

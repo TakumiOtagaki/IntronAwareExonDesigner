@@ -5,13 +5,13 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 from random import Random
-from typing import Any
+from typing import Any, Iterable, List
 import yaml
-
+from matplotlib import pyplot as plt
 
 from Bio import SeqIO
 
-from evaluator import EvaluatorConfig, SequenceEvaluator
+from evaluator import EvaluationResult, EvaluatorConfig, SequenceEvaluator
 from ga import GeneticAlgorithm, GeneticAlgorithmConfig
 from intron_design import IntronAwaredExonDesignerContext
 
@@ -27,6 +27,57 @@ def _sequence_snippet(sequence: str, width: int = 80) -> str:
         return sequence
     segment = max(1, (width - 1) // 2)
     return f"{sequence[:segment]}…{sequence[-segment:]}"
+
+
+def _multifasta_header(label: str, energy: float, boundary_score: float) -> str:
+    return f">{label} | efe={energy:.4f} | sum_bpp={boundary_score:.4f}"
+
+
+def _write_main_multifasta(
+    path: Path,
+    context: IntronAwaredExonDesignerContext,
+    best_result: EvaluationResult,
+    final_population: Iterable[EvaluationResult],
+) -> None:
+    lines: List[str] = []
+    best_main = context.rebuild_main_with_exons(best_result.exon_sequence)
+    lines.append(_multifasta_header("main best", best_result.energy, best_result.boundary_pair_score))
+    lines.append(best_main)
+    for idx, result in enumerate(final_population):
+        main_seq = context.rebuild_main_with_exons(result.exon_sequence)
+        header = _multifasta_header(f"main final_population{idx}", result.energy, result.boundary_pair_score)
+        lines.append(header)
+        lines.append(main_seq)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _plot_generation_metrics(metrics: Iterable[dict[str, float]], destination: Path) -> None:
+    data = list(metrics)
+    if not data:
+        return
+    generations = [entry["generation"] for entry in data]
+    fields = [
+        ("alpha_bpp", "Alpha × sum_bpp"),
+        ("beta_minus_efe", "Beta × (-EFE)"),
+        ("alpha_beta_mix", "Alpha × sum_bpp + Beta × (-EFE)"),
+    ]
+    fig, axes = plt.subplots(nrows=len(fields), ncols=1, figsize=(10, 8), sharex=True)
+    if len(fields) == 1:
+        axes = [axes]
+    for ax, (prefix, label) in zip(axes, fields):
+        mean_key = f"{prefix}_mean"
+        min_key = f"{prefix}_min"
+        ax.plot(generations, [entry[mean_key] for entry in data], label="mean", marker="o")
+        ax.plot(generations, [entry[min_key] for entry in data], label="min", marker="s")
+        ax.set_ylabel(label)
+        ax.grid(True, linestyle="--", alpha=0.5)
+        ax.legend()
+    axes[-1].set_xlabel("Generation")
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.suptitle("GA population metrics", fontsize=14)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(destination)
+    plt.close(fig)
 
 
 def _load_config(path: Path | None = None) -> dict[str, Any]:
@@ -50,6 +101,8 @@ def main() -> None:
     parser.add_argument("--mutation", type=float, help="Override GA mutation rate.")
     parser.add_argument("--tournament", type=int, help="Override GA tournament size.")
     parser.add_argument("--workers", type=int, help="Override GA parallel_workers setting.")
+    parser.add_argument("--output-prefix", help="Override output file prefix.")
+    parser.add_argument("--output-dir", help="Override output directory.")
     parser.add_argument("--seed", type=int, help="Deterministic RNG seed.")
     args = parser.parse_args()
 
@@ -65,6 +118,9 @@ def main() -> None:
         if workers_override is not None
         else ga_section.get("parallel_workers", config.get("parallel_workers"))
     )
+    output_config = config.get("output", {})
+    output_prefix = args.output_prefix or output_config.get("prefix", "ga_run")
+    output_dir = Path(args.output_dir or output_config.get("directory", "outputs"))
 
     evaluator_config = EvaluatorConfig(
         window_upstream=config.get("window_upstream", 60),
@@ -106,6 +162,8 @@ def main() -> None:
 
     print("GA run complete")
     print(f"Generations: {generations}; Population: {population}; Mutation: {mutation_rate:.3f}")
+    print(f"Tournament size: {tournament_size}; RNG seed: {seed if seed is not None else 'random'}")
+    print(f"number of workers: {parallel_workers or 'disabled'}")
     print(f"Cost history: {history}")
     print(f"Best cost: {best.cost:.4f}")
     print(f"Best genotype: {best.genotype}")
@@ -113,6 +171,14 @@ def main() -> None:
     print(f"Best full (DNA) sequence snippet: {snippet}")
     print(f"Best full (RNA) sequence snippet: {_sequence_snippet(rna_full)}")
     print(f"Boundary score: {best.boundary_pair_score:.4f}; Energy: {best.energy:.4f}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fasta_path = output_dir / f"{output_prefix}_main_sequences.fa"
+    _write_main_multifasta(fasta_path, context, best, ga.final_population)
+    metrics_path = output_dir / f"{output_prefix}_metrics.png"
+    _plot_generation_metrics(ga.generation_metrics, metrics_path)
+    print(f"Main sequence multifasta written to {fasta_path}")
+    print(f"Generation metric plot written to {metrics_path}")
 
 
 if __name__ == "__main__":

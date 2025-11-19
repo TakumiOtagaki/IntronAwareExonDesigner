@@ -63,6 +63,16 @@ def main() -> None:
     context = IntronAwaredExonDesignerContext(DEFAULT_CHIIRMA_PATH, amino_seq)
     evaluator = SequenceEvaluator(context, config=evaluator_config)
 
+    initial_exon = context.get_exon_sequence()
+    initial_dna_full = context.build_full_sequence(initial_exon)
+    initial_rna_full = context.build_full_sequence(initial_exon, rna_output=True)
+    baseline_boundary_score, baseline_energy = evaluator.evaluate_rna_sequence(initial_rna_full)
+    initial_cost = evaluator.config.alpha * baseline_boundary_score - evaluator.config.beta * baseline_energy
+    print("\nBaseline (initial sequence)")
+    print(f"  Boundary score: {baseline_boundary_score:.4f}")
+    print(f"  Energy: {baseline_energy:.4f}")
+    print(f"  Cost: {initial_cost:.4f}")
+
     ga_config = GeneticAlgorithmConfig(
         population_size=population,
         generations=generations,
@@ -72,11 +82,6 @@ def main() -> None:
     rng = Random(seed)
     ga = GeneticAlgorithm(evaluator, config=ga_config, rng=rng)
 
-    initial_exon = context.get_exon_sequence()
-    initial_dna_full = context.build_full_sequence(initial_exon)
-    initial_rna_full = context.build_full_sequence(initial_exon, rna_output=True)
-    baseline_boundary_score, baseline_energy = evaluator.evaluate_rna_sequence(initial_rna_full)
-    initial_cost = evaluator.config.alpha * baseline_boundary_score - evaluator.config.beta * baseline_energy
 
     best = ga.run(generations=generations)
 
@@ -87,10 +92,6 @@ def main() -> None:
     print("GA run complete")
     print(f"Generations: {generations}; Population: {population}; Mutation: {mutation_rate:.3f}")
     print(f"Cost history: {history}")
-    print("\nBaseline (initial sequence)")
-    print(f"  Boundary score: {baseline_boundary_score:.4f}")
-    print(f"  Energy: {baseline_energy:.4f}")
-    print(f"  Cost: {initial_cost:.4f}")
     print(f"Best cost: {best.cost:.4f}")
     print(f"Best genotype: {best.genotype}")
     print(f"Best full (DNA) sequence snippet: {snippet}")

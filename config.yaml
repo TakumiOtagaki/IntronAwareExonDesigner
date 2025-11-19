@@ -7,12 +7,11 @@ temperature:
   initial: 1.0
   decay: 0.995
 ga:
-  population_size: 8
+  population_size: 8 # parallel_workers で割り切られる値が望ましい.
   generations: 30
   mutation_rate: 0.05
   tournament_size: 3 # 大きいほど早熟収束のリスク, 小さいと探索範囲は広まるが収束が遅くなる. デフォルトは3.
 output:
-  sequence: dna
   directory: outputs
   prefix: intron_design
-parallel_workers: 8
+parallel_workers: 8 # population size を割り切る値が望ましい.

@@ -7,6 +7,7 @@ import RNA
 from collections import defaultdict
 from dataclasses import dataclass, field
 from random import Random
+from collections.abc import Sequence as AbcSequence
 from typing import Dict, Iterator, List, Mapping, Sequence, Tuple
 
 from Bio.Data import CodonTable
@@ -162,8 +163,10 @@ class SequenceEvaluator:
     def _evaluate_sequence(self, sequence: str) -> Tuple[float, float]:
         fold_compound = RNA.fold_compound(sequence)
         pf_result = fold_compound.pf()
-        if isinstance(pf_result, tuple):
-            _, energy = pf_result
+        if isinstance(pf_result, tuple) or isinstance(pf_result, list):
+            energy = float(pf_result[-1])
+        elif isinstance(pf_result, AbcSequence) and not isinstance(pf_result, (str, bytes)):
+            energy = float(pf_result[-1])
         else:
             energy = float(pf_result)
         bpp_matrix = fold_compound.bpp()

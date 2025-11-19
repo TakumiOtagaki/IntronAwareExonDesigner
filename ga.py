@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import Iterable, List, Protocol, Sequence, Tuple
 
+from tqdm import tqdm
+
 from evaluator import EvaluationResult, GenotypeDecoder
 
 
@@ -63,9 +65,16 @@ class GeneticAlgorithm:
         self.population = self._initialize_population()
         evaluated = self._evaluate_population(self.population)
         self._record_best(evaluated)
+        print(
+            "Starting GA run with "
+            f"population_size={self.config.population_size}, "
+            f"generations={generations if generations is not None else self.config.generations}, "
+            f"mutation_rate={self.config.mutation_rate:.3f}, "
+            f"tournament_size={self.config.tournament_size}"
+        )
 
         max_generations = generations if generations is not None else self.config.generations
-        for _ in range(max_generations):
+        for _ in tqdm(range(max_generations), desc="GA generations", unit="gen"):
             self.population = self._breed_population(evaluated)
             evaluated = self._evaluate_population(self.population)
             self._record_best(evaluated)

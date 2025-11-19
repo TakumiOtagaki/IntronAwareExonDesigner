@@ -5,7 +5,6 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 from random import Random
-from textwrap import shorten
 from typing import Any
 import yaml
 
@@ -20,6 +19,14 @@ from intron_design import IntronAwaredExonDesignerContext
 DEFAULT_CONFIG_PATH = Path("config.yaml")
 DEFAULT_CHIIRMA_PATH = Path("data/chimera.fa")
 DEFAULT_AMINO_PATH = Path("data/aminoacid.fa")
+
+
+def _sequence_snippet(sequence: str, width: int = 80) -> str:
+    """Return a truncated representation of a sequence with start/end context."""
+    if len(sequence) <= width:
+        return sequence
+    segment = max(1, (width - 1) // 2)
+    return f"{sequence[:segment]}…{sequence[-segment:]}"
 
 
 def _load_config(path: Path | None = None) -> dict[str, Any]:
@@ -86,7 +93,7 @@ def main() -> None:
     best = ga.run(generations=generations)
 
     history = " → ".join(f"{cost:.4f}" for cost in ga.cost_history)
-    snippet = shorten(best.full_sequence, width=80, placeholder="…")
+    snippet = _sequence_snippet(best.full_sequence)
     rna_full = context.build_full_sequence(best.exon_sequence, rna_output=True)
 
     print("GA run complete")
@@ -95,7 +102,7 @@ def main() -> None:
     print(f"Best cost: {best.cost:.4f}")
     print(f"Best genotype: {best.genotype}")
     print(f"Best full (DNA) sequence snippet: {snippet}")
-    print(f"Best full (RNA) sequence snippet: {shorten(rna_full, width=80, placeholder='…')}")
+    print(f"Best full (RNA) sequence snippet: {_sequence_snippet(rna_full)}")
     print(f"Boundary score: {best.boundary_pair_score:.4f}; Energy: {best.energy:.4f}")
 
 

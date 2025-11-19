@@ -200,9 +200,9 @@ class SequenceEvaluator:
 
     def _boundary_pair_probability(self, bpp_matrix) -> float:
         weights: Dict[int, float] = defaultdict(float)
-        for i, j, prob in self._iter_bpp_entries(bpp_matrix):
+        for i_1origin, j_1origin, prob in self._iter_bpp_entries(bpp_matrix):
+            i, j = i_1origin - 1, j_1origin - 1  # Convert to 0-origin
             weights[i] += prob
-            weights[j] += prob
 
         score = 0.0
         for idx in self.context.get_boundary_indices(flank=self.config.flank):
